@@ -1,6 +1,6 @@
 //
 //  HomeViewModel.swift
-//  Grocery
+//  WishList
 //
 //  Created by olivier geiger on 02/04/2025.
 //
@@ -28,9 +28,10 @@ class HomeViewModel {
     }
     
     var datas: [DataModel] = []
-    var textFieldText: String = ""
+    var textfieldText: String = ""
     var shouldClearFocus: Bool = false
     var sortType: SortType = .none
+    var isAlertShowing: Bool = false
     
     var sortedDatas: [DataModel] {
         switch sortType {
@@ -38,13 +39,6 @@ class HomeViewModel {
             return datas
         case .name:
             return datas.sorted(by: { $0.title < $1.title })
-        case .completed:
-            return datas.sorted {
-                if $0.isCompleted == $1.isCompleted {
-                    return $0.title < $1.title
-                }
-                return !$0.isCompleted && $1.isCompleted 
-            }
         }
     }
     
@@ -53,22 +47,23 @@ class HomeViewModel {
     }
     
     func addNewItem() {
-        guard !textFieldText.isEmpty else {
+        guard !textfieldText.isEmpty else {
             return
         }
         
-        let newItem = DataModel(title: textFieldText, isCompleted: false)
+        let newItem = DataModel(title: textfieldText, isCompleted: false)
         interactor.create(data: newItem)
         loadData()
-        textFieldText = ""
+        textfieldText = ""
         shouldClearFocus = true
     }
-            
+    
     func resetFocusState() {
         shouldClearFocus = false
     }
     
     func onDelete(_ data: DataModel) {
         interactor.delete(data: data)
+        loadData()
     }
 }

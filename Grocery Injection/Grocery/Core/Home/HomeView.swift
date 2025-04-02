@@ -20,55 +20,95 @@ struct HomeView: View {
     @Environment(DataManager.self) private var dataManager
     @FocusState private var isFocused: Bool
     @State var viewModel: HomeViewModel
-    
+
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(viewModel.sortedDatas) { data in
-                    GroceryItemRow(data: data, onDelete: viewModel.onDelete)
-                }
+            VStack {
+                groceryListView()
             }
             .navigationTitle("Grocery List")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Menu {
-                           Button {
-                               viewModel.sortType = .name
-                           } label: {
-                               Label("Filter alphabetiquement", systemImage: "textformat")
-                           }
-
-                           Button {
-                               viewModel.sortType = .completed
-                           } label: {
-                               Label("Filter par statut", systemImage: "checkmark.circle")
-                           }
-                       } label: {
-                           Image(systemName: "arrow.up.arrow.down")
-                               .foregroundStyle(.blue)
-                       }
-                }
-            }
-            .overlay {
-                if viewModel.datas.isEmpty {
-                    ContentUnavailableView("Empty Cart", systemImage: "cart.circle", description: Text("Add some items to the shopping list."))
+                    sortMenuView()
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                createInputArea()
+                inputAreaView()
             }
-        }
-        .onChange(of: viewModel.shouldClearFocus) { _, newValue in
-            if newValue {
-                isFocused = false
-                viewModel.resetFocusState()
+            .onChange(of: viewModel.shouldClearFocus) { _, newValue in
+                if newValue {
+                    isFocused = false
+                    viewModel.resetFocusState()
+                }
             }
         }
     }
     
-    private func createInputArea() -> some View {
+    /// ✅ Sous-vue : Menu de tri
+    private func sortMenuView() -> some View {
+        Menu {
+            Button {
+                viewModel.sortType = .name
+            } label: {
+                Label("Filtrer alphabétiquement", systemImage: "textformat")
+            }
+
+            Button {
+                viewModel.sortType = .completed
+            } label: {
+                Label("Filtrer par statut", systemImage: "checkmark.circle")
+            }
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .foregroundStyle(.blue)
+        }
+    }
+
+    /// ✅ Sous-vue : Liste des courses
+    private func groceryListView() -> some View {
+        List {
+            ForEach(viewModel.sortedDatas) { data in
+                groceryItemRow(data: data)
+            }
+        }
+        .overlay {
+            if viewModel.datas.isEmpty {
+                ContentUnavailableView("Empty Cart", systemImage: "cart.circle", description: Text("Add some items to the shopping list."))
+            }
+        }
+    }
+
+    /// ✅ Sous-vue : Élément de la liste
+    private func groceryItemRow(data: DataModel) -> some View {
+        Text(data.title)
+            .font(.title.weight(.light))
+            .padding(.vertical, 2)
+            .foregroundStyle(data.isCompleted == false ? Color.primary : Color.accentColor)
+            .strikethrough(data.isCompleted)
+            .italic(data.isCompleted)
+            .swipeActions {
+                Button(role: .destructive) {
+                    withAnimation {
+                        viewModel.onDelete(data)
+                    }
+                } label: {
+                    Label("Supprimer", systemImage: "trash")
+                }
+            }
+            .swipeActions(edge: .leading) {
+                Button {
+                    data.isCompleted.toggle()
+                } label: {
+                    Label("Terminé", systemImage: data.isCompleted ? "x.circle" : "checkmark.circle")
+                }
+                .tint(data.isCompleted ? .accentColor : .green)
+            }
+    }
+
+    /// ✅ Sous-vue : Zone de saisie
+    private func inputAreaView() -> some View {
         VStack(spacing: 12) {
-            TextField("", text: $viewModel.textFieldText)
+            TextField("Ajouter un élément", text: $viewModel.textFieldText)
                 .textFieldStyle(.plain)
                 .padding(12)
                 .background(.tertiary)
@@ -79,7 +119,7 @@ struct HomeView: View {
             Button {
                 viewModel.addNewItem()
             } label: {
-                Text("Save")
+                Text("Enregistrer")
                     .font(.title2.weight(.medium))
                     .frame(maxWidth: .infinity)
             }
@@ -92,40 +132,8 @@ struct HomeView: View {
     }
 }
 
-struct GroceryItemRow: View {
-    var data: DataModel
-    var onDelete: (DataModel) -> Void
-    
-    var body: some View {
-        Text(data.title)
-            .font(.title.weight(.light))
-            .padding(.vertical, 2)
-            .foregroundStyle(data.isCompleted == false ? Color.primary : Color.accentColor)
-            .strikethrough(data.isCompleted)
-            .italic(data.isCompleted)
-            .swipeActions {
-                Button(role: .destructive) {
-                    withAnimation {
-                        onDelete(data)
-                    }
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            }
-            .swipeActions(edge: .leading) {
-                Button("Done", systemImage: data.isCompleted == false ?  "checkmark.circle" : "x.circle") {
-                    data.isCompleted.toggle()
-                }
-                .tint(data.isCompleted == false ? .green : .accentColor)
-            }
-    }
-}
-
 #Preview("Empty List") {
-    let container = DevPreview.shared.container
-    container.register(DataManager.self, service: DataManager(local: MockLocalPersistance(mocks: [])))
-    
-    return HomeView(viewModel: HomeViewModel(interactor: CoreInteractor(container: container)))
+    HomeView(viewModel: HomeViewModel(interactor: CoreInteractor(container: DevPreview.shared.container)))
         .previewEnvironment()
 }
 

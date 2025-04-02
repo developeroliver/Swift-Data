@@ -1,9 +1,29 @@
 //
 //  MockLocalPersistance.swift
-//  Grocery
+//  WishList
 //
 
 import Foundation
+
+/// Pour la preview
+class MockHomeInteractor: HomeInteractor {
+    
+    private var dataStorage: [DataModel] = DataModel.mocks
+
+    func fetchData() -> [DataModel] {
+        return dataStorage
+    }
+    
+    func create(data: DataModel) {
+        dataStorage.append(data)
+    }
+    
+    func delete(data: DataModel) {
+        if let index = dataStorage.firstIndex(where: { $0.id == data.id }) {
+            dataStorage.remove(at: index)
+        }
+    }
+}
 
 class MockLocalPersistance: LocalPersistance {
     
@@ -36,25 +56,5 @@ class MockLocalPersistance: LocalPersistance {
     
     func deleteAllData() {
         mocks.removeAll()
-    }
-}
-
-/// Pour la preview
-class MockHomeInteractor: HomeInteractor {
-    
-    private var dataStorage: [DataModel] = DataModel.mocks
-
-    func fetchData() -> [DataModel] {
-        return dataStorage
-    }
-    
-    func create(data: DataModel) {
-        dataStorage.append(data)
-    }
-    
-    func delete(data: DataModel) {
-        if let index = dataStorage.firstIndex(where: { $0.id == data.id }) {
-            dataStorage.remove(at: index)
-        }
     }
 }
